@@ -70,6 +70,14 @@ main = do
 --	setNumCapabilities 2
 
 	q <- rtrt_newQueue 128
+
+	let pq = (fromIntegral $ ptrToIntPtr q) :: Integer
+	print (here, pq)
+
+	let m = simple pq
+
+	JIT.runJIT m
+
 #if 0
 	rtrt_queueReadAvailable q >>= print
 	rtrt_queueWriteAvailable q >>= print
