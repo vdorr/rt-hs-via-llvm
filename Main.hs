@@ -43,12 +43,15 @@ foreign import ccall "rtrt_queueWriteAvailable" rtrt_queueWriteAvailable :: Ptr 
 foreign import ccall "rtrt_queuePush" rtrt_queuePush :: Ptr () -> Int -> IO ()
 foreign import ccall "rtrt_queuePop" rtrt_queuePop :: Ptr () -> IO Int
 
+--foreign export ccall rtrt_queuePush_ :: Ptr () -> Int -> IO ()
+--rtrt_queuePush_ = rtrt_queuePush
+
 --------------------------------------------------------------------------------
 
 simple :: Integer -> Module
 simple q = buildModule "exampleModule" $ mdo
 
-	f <- extern "rtrt_queuePush" [AST.ptr AST.void, AST.i64] AST.void
+	f <- extern "rtrt_queuePush_" [AST.ptr AST.void, AST.i64] AST.void
 
 	function "main" [] AST.double $ \[] -> do
 		_entry <- block `named` "entry3"
@@ -76,6 +79,7 @@ main = do
 
 	let m = simple pq
 
+	loadLibraryPermanently Nothing
 	JIT.runJIT m
 
 #if 0
