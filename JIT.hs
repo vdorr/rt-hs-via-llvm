@@ -25,17 +25,15 @@ import qualified Data.ByteString.Char8 as ByteString
 import qualified LLVM.AST
 
 foreign import ccall "dynamic"
-  mkFun :: FunPtr (IO Int32) -> IO Int32
+  mkFun :: FunPtr (IO Int) -> IO Int
 
 resolver :: IRCompileLayer l -> SymbolResolver
 resolver compileLayer =
   SymbolResolver
-    (\s -> findSymbol compileLayer s False) --True
---    (\s -> error $ show s)
+    (\s -> findSymbol compileLayer s True)
     (\s ->
        fmap
          (\a -> Right $ JITSymbol a (JITSymbolFlags False False False True))
---         (\a -> error $ "!!" ++ show a)
          (getSymbolAddressInProcess s))
 
 withHostTargetMachine :: (TargetMachine -> IO a) -> IO a
@@ -68,13 +66,10 @@ runJIT m = do
               mod'
               (resolver compileLayer) $
               \_ -> do
-                print here
-                w <- mangleSymbol compileLayer "rtrt_queuePush"
-                getSymbolAddressInProcess w >>= print
 
                 mainSymbol <- mangleSymbol compileLayer "main"
                 Right (JITSymbol mainFn _) <- findSymbol compileLayer mainSymbol True
                 unless (mainFn /= fromIntegral 0) (error "Couldn’t find JIT symbol")
                 result <- mkFun (castPtrToFunPtr (wordPtrToPtr mainFn))
-                print result
+                print (here, result)
 

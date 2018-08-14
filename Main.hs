@@ -18,13 +18,13 @@ import LLVM.Linking
 
 -- based on https://github.com/llvm-hs/llvm-hs-examples/blob/master/irbuilder/Main.hs
 
-import qualified Data.Text.Lazy.IO as T
+--import qualified Data.Text.Lazy.IO as T
 
 import LLVM.AST hiding (function)
 import LLVM.AST.Type as AST
-import qualified LLVM.AST.Float as F
+--import qualified LLVM.AST.Float as F
 import qualified LLVM.AST.Constant as C
-import qualified LLVM.AST.IntegerPredicate as P
+--import qualified LLVM.AST.IntegerPredicate as P
 
 import LLVM.IRBuilder.Module
 import LLVM.IRBuilder.Monad
@@ -43,23 +43,20 @@ foreign import ccall "rtrt_queueWriteAvailable" rtrt_queueWriteAvailable :: Ptr 
 foreign import ccall "rtrt_queuePush" rtrt_queuePush :: Ptr () -> Int -> IO ()
 foreign import ccall "rtrt_queuePop" rtrt_queuePop :: Ptr () -> IO Int
 
---foreign export ccall rtrt_queuePush_ :: Ptr () -> Int -> IO ()
---rtrt_queuePush_ = rtrt_queuePush
-
 --------------------------------------------------------------------------------
 
 simple :: Integer -> Module
 simple q = buildModule "exampleModule" $ mdo
 
-	f <- extern "rtrt_queuePush_" [AST.ptr AST.void, AST.i64] AST.void
+	f <- extern "rtrt_queuePush" [AST.ptr AST.void, AST.i64] AST.void
 
-	function "main" [] AST.double $ \[] -> do
+	function "main" [] AST.i64 $ \[] -> do
 		_entry <- block `named` "entry3"
 		call f
 			[ (ConstantOperand (C.IntToPtr (C.Int 64 q) (AST.ptr AST.void)), [])
-			, (ConstantOperand (C.Int 64 8), [])
+			, (ConstantOperand (C.Int 64 17), [])
 			]
-		ret (ConstantOperand (C.Float (F.Double 8)))
+		ret (ConstantOperand (C.Int 64 231))
 
 --------------------------------------------------------------------------------
 
@@ -67,10 +64,12 @@ loop x f = f x >>= flip loop f
 
 main :: IO ()
 main = do
+
 	cbits_hello 10 >>= print
 	putStrLn "Hello, Haskell!"
 
 --	setNumCapabilities 2
+	getNumCapabilities >>= print
 
 	q <- rtrt_newQueue 128
 
@@ -105,7 +104,7 @@ main = do
 			0 -> threadDelay 1000
 			n -> replicateM n (rtrt_queuePop q) >>= print
 --		print (here, 2)
-		return ()
+--		return ()
 #endif
 	rtrt_deleteQueue q
 
