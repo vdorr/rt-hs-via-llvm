@@ -4,9 +4,8 @@
 #include <boost/lockfree/spsc_queue.hpp>
 //#include <boost/atomic.hpp>
 
-#include <thread>
-#include <chrono>
-
+//#include <thread>
+//#include <chrono>
 #include <unistd.h>
 
 extern "C" void* rtrt_newQueue ( int cap ) {

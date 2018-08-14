@@ -45,16 +45,16 @@ foreign import ccall "rtrt_queuePop" rtrt_queuePop :: Ptr () -> IO Int
 
 --------------------------------------------------------------------------------
 
---al = 16
-
 simple :: Integer -> Module
-simple q = buildModule "exampleModule" $ mdo
+simple qp = buildModule "exampleModule" $ mdo
 
 	post <- extern "rtrt_queuePush" [AST.ptr AST.void, AST.i64] AST.void
+	getReadAvail <- extern "rtrt_queueReadAvailable" [AST.ptr AST.void] AST.i64
+
 	sleep <- extern "rtrt_sleep" [] AST.void
 
 	function "main" [] AST.i64 $ \[] -> mdo
-		entry <- block `named` "entry"
+		_entry <- block `named` "entry"
 		cond <- alloca AST.i1 Nothing 0
 		store cond 0 (ConstantOperand $ C.Int 1 1)
 		value <- alloca AST.i64 Nothing 0
@@ -63,15 +63,15 @@ simple q = buildModule "exampleModule" $ mdo
 		loop <- block `named` "loop"
 		v <- load value 0
 		call post
-			[ (ConstantOperand (C.IntToPtr (C.Int 64 q) (AST.ptr AST.void)), [])
+			[ (ConstantOperand (C.IntToPtr (C.Int 64 qp) (AST.ptr AST.void)), [])
 --			, (ConstantOperand (C.Int 64 17), [])
 			, (v, [])
 			]
-		v' <-  add v (ConstantOperand (C.Int 64 2))
+		v' <- add v (ConstantOperand (C.Int 64 2))
 		store value 0 v'
 		call sleep []
 
-		c <- load cond 0
+		c <- load cond 0 --TODO input queue
 		condBr c loop exit
 		exit <- block `named` "exit"
 		ret (ConstantOperand (C.Int 64 231))
@@ -127,7 +127,7 @@ main = do
 
 	forever $ do
 		rtrt_queueReadAvailable q >>= \case
-			0 -> threadDelay 1000
+			0 -> threadDelay 10000
 			n -> replicateM n (rtrt_queuePop q) >>= print
 --		print (here, 2)
 --		return ()
