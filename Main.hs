@@ -45,17 +45,35 @@ foreign import ccall "rtrt_queuePop" rtrt_queuePop :: Ptr () -> IO Int
 
 --------------------------------------------------------------------------------
 
+--al = 16
+
 simple :: Integer -> Module
 simple q = buildModule "exampleModule" $ mdo
 
-	f <- extern "rtrt_queuePush" [AST.ptr AST.void, AST.i64] AST.void
+	post <- extern "rtrt_queuePush" [AST.ptr AST.void, AST.i64] AST.void
+	sleep <- extern "rtrt_sleep" [] AST.void
 
-	function "main" [] AST.i64 $ \[] -> do
-		_entry <- block `named` "entry3"
-		call f
+	function "main" [] AST.i64 $ \[] -> mdo
+		entry <- block `named` "entry"
+		cond <- alloca AST.i1 Nothing 0
+		store cond 0 (ConstantOperand $ C.Int 1 1)
+		value <- alloca AST.i64 Nothing 0
+		store value 0 (ConstantOperand $ C.Int 64 32)
+		br loop
+		loop <- block `named` "loop"
+		v <- load value 0
+		call post
 			[ (ConstantOperand (C.IntToPtr (C.Int 64 q) (AST.ptr AST.void)), [])
-			, (ConstantOperand (C.Int 64 17), [])
+--			, (ConstantOperand (C.Int 64 17), [])
+			, (v, [])
 			]
+		v' <-  add v (ConstantOperand (C.Int 64 2))
+		store value 0 v'
+		call sleep []
+
+		c <- load cond 0
+		condBr c loop exit
+		exit <- block `named` "exit"
 		ret (ConstantOperand (C.Int 64 231))
 
 --------------------------------------------------------------------------------
@@ -79,7 +97,10 @@ main = do
 	let m = simple pq
 
 	loadLibraryPermanently Nothing
+#if 0
+	print (here, "enter JIT")
 	JIT.runJIT m
+#endif
 
 #if 0
 	rtrt_queueReadAvailable q >>= print
@@ -93,11 +114,16 @@ main = do
 #endif
 
 #if 1
+#if 0
 	forkOS $ loop 0 $ \i -> do
---		print (here, 1)
 		threadDelay 500000
 		rtrt_queuePush q i
 		return (i + 2)
+#else
+	forkOS $ do
+		print (here, "enter JIT")
+		JIT.runJIT m
+#endif
 
 	forever $ do
 		rtrt_queueReadAvailable q >>= \case
