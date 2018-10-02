@@ -34,8 +34,6 @@ import qualified JIT
 
 --------------------------------------------------------------------------------
 
-foreign import ccall "cbits_hello" cbits_hello :: Int -> IO Int
-
 foreign import ccall "rtrt_newQueue" rtrt_newQueue :: Int -> IO (Ptr ())
 foreign import ccall "rtrt_deleteQueue" rtrt_deleteQueue :: Ptr () -> IO ()
 foreign import ccall "rtrt_queueReadAvailable" rtrt_queueReadAvailable :: Ptr () -> IO Int
@@ -82,9 +80,6 @@ loop x f = f x >>= flip loop f
 
 main :: IO ()
 main = do
-
-	cbits_hello 10 >>= print
-	putStrLn "Hello, Haskell!"
 
 --	setNumCapabilities 2
 	getNumCapabilities >>= print

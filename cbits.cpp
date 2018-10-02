@@ -1,12 +1,12 @@
 
 #include <cstdio>
-
 #include <boost/lockfree/spsc_queue.hpp>
-//#include <boost/atomic.hpp>
-
 //#include <thread>
 //#include <chrono>
 #include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/capability.h>
 
 extern "C" void* rtrt_newQueue ( int cap ) {
 	return static_cast<void*>(new boost::lockfree::spsc_queue<int>(cap));
@@ -25,7 +25,7 @@ extern "C" int rtrt_queueWriteAvailable ( const void* q ) {
 }
 
 extern "C" void rtrt_queuePush ( void* q, const int v ) {
-	//printf("%s:%i %i\n", __FUNCTION__, __LINE__, v);
+
 	static_cast<boost::lockfree::spsc_queue<int>*>(q)->push(v);
 }
 
@@ -38,17 +38,4 @@ extern "C" int rtrt_queuePop ( void* q ) {
 extern "C" void rtrt_sleep () {
 	usleep(500000);
 }
-
-#if 1
-
-boost::lockfree::spsc_queue<int, boost::lockfree::capacity<1024> > spsc_queue;
-
-extern "C" int cbits_hello (int x) {
-
-//	boost::lockfree::spsc_queue<int>* q = new boost::lockfree::spsc_queue<int>(256);
-//	printf("%s%i %i %i %i\n", __FUNCTION__, __LINE__, x, q->read_available(), q->write_available());
-	printf("%s:%i %i\n", __FUNCTION__, __LINE__, x);
-	return 8;
-}
-#endif
 
